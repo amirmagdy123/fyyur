@@ -33,9 +33,9 @@ migrate = Migrate(app, db)
 # Models.
 #----------------------------------------------------------------------------#
 
+ 
 class Venue(db.Model):
     __tablename__ = 'Venue'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     city = db.Column(db.String(120))
@@ -54,6 +54,8 @@ class Venue(db.Model):
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
+    
+ 
 class Artist(db.Model):
     __tablename__ = 'Artist'
 
@@ -442,41 +444,6 @@ def edit_venue_submission(venue_id):
       db.session.close()
   return render_template('pages/home.html')
 
-#  Edit Venue
-#  ----------------------------------------------------------------
-@app.route('/venues/<int:venue_id>/edit', methods=['GET'])
-def edit_venue(venue_id):
-  form = VenueForm()
-  venue = db.session.query(Venue).filter(Venue.id == venue_id).one()
-  return render_template('forms/edit_venue.html', form=form, venue=venue)
-
-@app.route('/venues/<int:venue_id>/edit', methods=['POST'])
-def edit_venue_submission(venue_id):
-    form = VenueForm(request.form)
-    venue = db.session.query(Venue).filter(Venue.id == venue_id).one()
-
-    updated_venue = {
-        name: form.name.data,
-        genres: form.genres.data,
-        address: form.address.data,
-        city: form.city.data,
-        state: form.state.data,
-        phone: form.phone.data,
-        website: form.website.data,
-        facebook_link: form.facebook_link.data,
-        seeking_talent: form.seeking_talent.data,
-        seeking_description: form.seeking_description.data,
-        image_link: form.image_link.data
-    }
-    try:
-       db.session.query(Venue).filter(Venue.id == venue_id).update(updated_venue)
-       db.session.commit()
-       flash('Venue' + form.name.data + ' was successfully updated!')
-    except:
-       flash('An error occurred. Venue ' + form.name.data + ' could not be updated.')
-    finally:
-       db.session.close()
-    return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Create Artist
 #  ----------------------------------------------------------------
