@@ -19,6 +19,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from models import app, db, Venue, Artist, Show
+from datetime import datetime
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -26,7 +27,6 @@ from models import app, db, Venue, Artist, Show
 moment = Moment(app)
 app.config.from_object('config')
 db.init_app(app)
-SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # TODO: connect to a local postgresql database
 # done in config.py file
@@ -60,7 +60,7 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
- data=[]
+ """  data=[]
  cities = db.session.query(Venue.city, Venue.state).distinct(Venue.city, Venue.state)
  
  for city in cities:
@@ -71,6 +71,21 @@ def venues():
         "venues": venues_in_the_city
      })
  return render_template('pages/venues.html', areas=data);
+ """
+ locals = []
+ venues = Venue.query.all()
+ for place in Venue.query.distinct(Venue.city, Venue.state).all():
+     locals.append({
+         'city': place.city,
+         'state': place.state,
+         'venues': [{
+            'id': venue.id,
+            'name': venue.name,
+          } for venue in venues if
+            venue.city == place.city and venue.state == place.state]
+     })
+ return render_template('pages/venues.html', areas=locals)
+
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -358,31 +373,57 @@ def edit_venue(venue_id):
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
-  form = VenueForm(request.form)
 
-  venue = Venue(
-    name = form.name.data,
-    genres = form.genres.data,
-    address = form.address.data,
-    city = form.city.data,
-    state = form.state.data,
-    phone = form.phone.data,
-    website = form.website.data,
-    facebook_link = form.facebook_link.data,
-    seeking_talent = form.seeking_talent.data,
-    seeking_description = form.seeking_description.data,
-    image_link = form.image_link.data,
-  )
-  try:
-      db.session.add(venue)
-      db.session.commit()
-      # on successful db insert, flash success
-      flash('Venue ' + form.name.data + ' was successfully listed!')
-  except:
-      flash('An error occurred. Venue ' + form.name.data + ' could not be added.')
-  finally:
-      db.session.close()
-  return render_template('pages/home.html')
+ form = VenueForm(request.form, meta={'csrf': False})
+ if form.validate():
+     try:
+         venue = Venue()
+         form.populate_obj(venue)
+         db.session.add(venue)
+         db.session.commit()
+         flash('Venue ' + form.name.data + ' was successfully listed!')
+
+
+     except ValueError as e:
+         print(e)
+         flash('An error occurred. Venue ' + form.name.data + ' could not be added.')
+         db.session.rollback()
+     finally:
+         db.session.close()
+ else:
+     message = []
+     for field, err in form.errors.items():
+         message.append(field + ' ' + '|'.join(err))
+     flash('Errors ' + str(message))
+ 
+ return render_template('pages/home.html')
+  
+  ############=============================
+  # form = VenueForm(request.form)
+
+  # venue = Venue(
+  #   name = form.name.data,
+  #   genres = form.genres.data,
+  #   address = form.address.data,
+  #   city = form.city.data,
+  #   state = form.state.data,
+  #   phone = form.phone.data,
+  #   website = form.website.data,
+  #   facebook_link = form.facebook_link.data,
+  #   seeking_talent = form.seeking_talent.data,
+  #   seeking_description = form.seeking_description.data,
+  #   image_link = form.image_link.data,
+  # )
+  # try:
+  #     db.session.add(venue)
+  #     db.session.commit()
+  #     # on successful db insert, flash success
+  #     flash('Venue ' + form.name.data + ' was successfully listed!')
+  # except:
+  #     flash('An error occurred. Venue ' + form.name.data + ' could not be added.')
+  # finally:
+  #     db.session.close()
+  # return render_template('pages/home.html')
 
 
 #  Create Artist
